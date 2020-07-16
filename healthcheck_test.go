@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+	"github.com/alicebob/miniredis"
+	"github.com/go-redis/redis"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -13,13 +15,16 @@ const (
 )
 
 func TestCache_Checker(t *testing.T) {
-
 	Convey("Given that health endpoint returns 'Success'", t, func() {
+		mr, err := miniredis.Run()
+		if err != nil {
+			panic(err)
+		}
+		defer mr.Close()
 
-		// TODO - need to mock this?
 		// RedisClient with success health check
 		c := &Redis{
-			client: NewClient(Options{}).client,
+			client: redis.NewClient(&redis.Options{Addr: mr.Addr()}),
 			ttl:    0,
 		}
 
