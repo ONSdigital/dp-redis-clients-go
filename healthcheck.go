@@ -13,6 +13,5 @@ func (c *Client) Checker(state *health.CheckState) error {
 		return state.Update(health.StatusCritical, err.Error(), 0)
 	}
 	// Success
-	_ = state.Update(health.StatusOK, HealthyMessage, 0)
-	return nil
+	return state.Update(health.StatusOK, HealthyMessage, 0)
 }
