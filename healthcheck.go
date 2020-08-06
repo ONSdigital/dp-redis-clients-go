@@ -1,4 +1,4 @@
-package dp_redis
+package redis
 
 import (
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
@@ -6,7 +6,7 @@ import (
 
 const HealthyMessage = "redis is OK"
 
-func (c *Redis) Checker(state *health.CheckState) error {
+func (c *Client) Checker(state *health.CheckState) error {
 	_, err := c.client.Ping().Result()
 	if err != nil {
 		// Generic error

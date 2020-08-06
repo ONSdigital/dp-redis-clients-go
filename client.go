@@ -1,32 +1,42 @@
-package dp_redis
+package redis
 
 import (
-	"github.com/go-redis/redis"
+	"errors"
 	"time"
+
+	goredis "github.com/go-redis/redis"
 )
 
-// Redis - structure for the redis client
-type Redis struct {
-	client *redis.Client
+// Client - structure for the redis client
+type Client struct {
+	client *goredis.Client
 	ttl    time.Duration
 }
 
-// Options - config options for the redis client
-type Options struct {
+// Config - config options for the redis client
+type Config struct {
 	Addr     string
 	Password string
-	DB       int
-	ttl      time.Duration
+	Database int
+	TTL      time.Duration
 }
 
 // NewClient - returns new redis client with provided config options
-func NewClient(o Options) *Redis {
-	return &Redis{
-		client: redis.NewClient(&redis.Options{
-			Addr: o.Addr,
-			Password: o.Password,
-			DB: o.DB,
-		}),
-		ttl:    o.ttl,
+func NewClient(c Config) (*Client, error) {
+	if c.Addr == "" {
+		return nil, errors.New("address is missing")
 	}
+
+	if c.Password == "" {
+		return nil, errors.New("password is missing")
+	}
+
+	return &Client{
+		client: goredis.NewClient(&goredis.Options{
+			Addr:     c.Addr,
+			Password: c.Password,
+			DB:       c.Database,
+		}),
+		ttl: c.TTL,
+	}, nil
 }
