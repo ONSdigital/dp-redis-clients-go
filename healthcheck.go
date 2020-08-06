@@ -10,8 +10,7 @@ func (c *Client) Checker(state *health.CheckState) error {
 	_, err := c.client.Ping().Result()
 	if err != nil {
 		// Generic error
-		_ = state.Update(health.StatusCritical, err.Error(), 0)
-		return err
+		return state.Update(health.StatusCritical, err.Error(), 0)
 	}
 	// Success
 	_ = state.Update(health.StatusOK, HealthyMessage, 0)
