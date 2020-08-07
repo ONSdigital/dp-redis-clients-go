@@ -1,5 +1,8 @@
 package redis
 
+//go:generate moq -out mock/mockresulter.go -pkg mock . Resulter
+//go:generate moq -out mock/mockclienter.go -pkg mock . Clienter
+
 import (
 	"context"
 	"errors"
@@ -19,8 +22,8 @@ type Resulter interface {
 
 //Clienter - interface for redis
 type Clienter interface {
-	Set(string, string, time.Duration)
-	Ping()
+	Set(string, string, time.Duration) Resulter
+	Ping() Resulter
 }
 
 //GoRedisClient - structure for the redis client

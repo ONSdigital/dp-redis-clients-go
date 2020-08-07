@@ -6,6 +6,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+
 func TestClient_Set(t *testing.T) {
 	Convey("Given redis client is set up", t, func() {
 
