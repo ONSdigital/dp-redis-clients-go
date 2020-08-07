@@ -1,4 +1,4 @@
-package redis
+package cache
 
 import (
 	"context"
@@ -12,9 +12,28 @@ import (
 
 var ctx = context.Background()
 
-// Client - structure for the redis client
-type Client struct {
+//Resulter - interface for redis.StatsCMD
+type Resulter interface {
+	Result() (string, error)
+}
+
+//Clienter - interface for redis
+type Clienter interface {
+	Set(string, string, time.Duration)
+}
+
+//RedisClient - structure for the redis client
+type RedisClient struct {
 	client *goredis.Client
+}
+
+func (rc *RedisClient) Set(key string, value string, ttl time.Duration) Resulter {
+	return rc.client.Set(key, value, ttl)
+}
+
+// Client - structure for the cache client
+type Client struct {
+	client RedisClient
 	ttl    time.Duration
 }
 
@@ -37,12 +56,12 @@ func NewClient(c Config) (*Client, error) {
 	}
 
 	return &Client{
-		client: goredis.NewClient(&goredis.Options{
-			Addr:     c.Addr,
+		client:  RedisClient{client:goredis.NewClient(&goredis.Options{
+			Addr: c.Addr,
 			Password: c.Password,
-			DB:       c.Database,
-		}),
-		ttl: c.TTL,
+			DB: c.Database,
+		})},
+		ttl:     0,
 	}, nil
 }
 
@@ -59,7 +78,7 @@ func (c *Client) Set(s *session.Session) error {
 		return err
 	}
 
-	msg, err := c.client.Set(s.ID, json, c.ttl).Result()
+	msg, err := c.client.Set(s.ID, string(json), c.ttl).Result()
 	if err != nil {
 		log.Event(ctx, msg, log.Error(err), log.ERROR)
 	}
