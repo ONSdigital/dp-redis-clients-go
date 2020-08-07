@@ -1,4 +1,4 @@
-package cache
+package redis
 
 import (
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"

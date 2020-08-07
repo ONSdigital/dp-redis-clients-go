@@ -1,12 +1,12 @@
-package cache
+package redis
 
 import (
 	"context"
 	"errors"
-	"github.com/ONSdigital/log.go/log"
 	"time"
 
 	"github.com/ONSdigital/dp-sessions-api/session"
+	"github.com/ONSdigital/log.go/log"
 	goredis "github.com/go-redis/redis"
 )
 
@@ -23,22 +23,22 @@ type Clienter interface {
 	Ping()
 }
 
-//RedisClient - structure for the redis client
-type RedisClient struct {
+//GoRedisClient - structure for the redis client
+type GoRedisClient struct {
 	client *goredis.Client
 }
 
-func (rc *RedisClient) Set(key string, value string, ttl time.Duration) Resulter {
+func (rc *GoRedisClient) Set(key string, value string, ttl time.Duration) Resulter {
 	return rc.client.Set(key, value, ttl)
 }
 
-func (rc RedisClient) Ping() Resulter {
+func (rc GoRedisClient) Ping() Resulter {
 	return rc.client.Ping()
 }
 
 // Client - structure for the cache client
 type Client struct {
-	client RedisClient
+	client GoRedisClient
 	ttl    time.Duration
 }
 
@@ -61,7 +61,7 @@ func NewClient(c Config) (*Client, error) {
 	}
 
 	return &Client{
-		client:  RedisClient{client:goredis.NewClient(&goredis.Options{
+		client:  GoRedisClient{client:goredis.NewClient(&goredis.Options{
 			Addr: c.Addr,
 			Password: c.Password,
 			DB: c.Database,
