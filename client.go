@@ -20,6 +20,7 @@ type Resulter interface {
 //Clienter - interface for redis
 type Clienter interface {
 	Set(string, string, time.Duration)
+	Ping()
 }
 
 //RedisClient - structure for the redis client
@@ -29,6 +30,10 @@ type RedisClient struct {
 
 func (rc *RedisClient) Set(key string, value string, ttl time.Duration) Resulter {
 	return rc.client.Set(key, value, ttl)
+}
+
+func (rc RedisClient) Ping() Resulter {
+	return rc.client.Ping()
 }
 
 // Client - structure for the cache client
