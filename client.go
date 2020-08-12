@@ -1,47 +1,26 @@
-package redis
-
-//go:generate moq -out mock/mockresulter.go -pkg mock . Resulter
-//go:generate moq -out mock/mockclienter.go -pkg mock . Clienter
+package dpredis
 
 import (
 	"context"
 	"errors"
 	"time"
 
+	. "github.com/ONSdigital/dp-redis/interfaces"
 	"github.com/ONSdigital/dp-sessions-api/session"
 	"github.com/ONSdigital/log.go/log"
-	goredis "github.com/go-redis/redis"
+	"github.com/go-redis/redis"
 )
 
 var ctx = context.Background()
 
-//Resulter - interface for redis.StatsCMD
-type Resulter interface {
-	Result() (string, error)
-}
-
-//Clienter - interface for redis
-type Clienter interface {
-	Set(string, string, time.Duration) Resulter
-	Ping() Resulter
-}
-
-//GoRedisClient - structure for the redis client
-type GoRedisClient struct {
-	client *goredis.Client
-}
-
-func (rc *GoRedisClient) Set(key string, value string, ttl time.Duration) Resulter {
-	return rc.client.Set(key, value, ttl)
-}
-
-func (rc GoRedisClient) Ping() Resulter {
-	return rc.client.Ping()
+// RedisClient - structure for the redis client
+type RedisClient struct {
+	client RedisClienter
 }
 
 // Client - structure for the cache client
 type Client struct {
-	client GoRedisClient
+	client RedisClient
 	ttl    time.Duration
 }
 
@@ -64,7 +43,7 @@ func NewClient(c Config) (*Client, error) {
 	}
 
 	return &Client{
-		client:  GoRedisClient{client:goredis.NewClient(&goredis.Options{
+		client:  RedisClient{client:redis.NewClient(&redis.Options{
 			Addr: c.Addr,
 			Password: c.Password,
 			DB: c.Database,
@@ -73,7 +52,7 @@ func NewClient(c Config) (*Client, error) {
 	}, nil
 }
 
-//Set add session to redis
+// Set - add session to redis
 func (c *Client) Set(s *session.Session) error {
 	if s == nil {
 		log.Event(ctx, "session is empty", log.ERROR)
@@ -89,8 +68,19 @@ func (c *Client) Set(s *session.Session) error {
 	msg, err := c.client.Set(s.ID, string(json), c.ttl).Result()
 	if err != nil {
 		log.Event(ctx, msg, log.Error(err), log.ERROR)
+		return err
 	}
 	log.Event(ctx, msg, log.INFO)
 
 	return nil
+}
+
+// Set - redis implementation of Set
+func (rc *RedisClient) Set(key string, value string, ttl time.Duration) *redis.StatusCmd {
+	return rc.client.Set(key, value, ttl)
+}
+
+// Ping - redis implementation of Ping
+func (rc RedisClient) Ping() *redis.StatusCmd {
+	return rc.client.Ping()
 }

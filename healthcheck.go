@@ -1,4 +1,4 @@
-package redis
+package dpredis
 
 import (
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"

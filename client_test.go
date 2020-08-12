@@ -1,9 +1,14 @@
-package redis
+package dpredis
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
+	"errors"
 	"testing"
 	"time"
+
+	"github.com/ONSdigital/dp-redis/interfaces/mock"
+	"github.com/ONSdigital/dp-sessions-api/session"
+	"github.com/go-redis/redis"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestNewClient(t *testing.T) {
@@ -38,7 +43,62 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestClient_Set(t *testing.T) {
+	Convey("Given a valid session", t, func() {
+		mockRedisClient, mockClient := setUpMocks(*redis.NewStatusResult("success", nil))
 
+		s := &session.Session{
+			ID:           "1234",
+			Email:        "user@email.com",
+			Start:        time.Now(),
+			LastAccessed: time.Now(),
+		}
+
+		Convey("When cache attempts to store session", func() {
+			err := mockClient.Set(s)
+
+			Convey("Then session should be stored", func() {
+				So(err, ShouldBeNil)
+				So(mockRedisClient.SetCalls(), ShouldHaveLength, 1)
+			})
+		})
+	})
+
+	Convey("Given a valid session", t, func() {
+		mockRedisClient, mockClient := setUpMocks(*redis.NewStatusResult("fail", errors.New("failed to store session")))
+
+		s := &session.Session{
+			ID: "1234",
+			Email: "user@email.com",
+			Start: time.Now(),
+			LastAccessed: time.Now(),
+		}
+
+		Convey("When cache attempts to store session", func() {
+			err := mockClient.Set(s)
+
+			Convey("Then session will not be stored", func() {
+				So(mockRedisClient.SetCalls(), ShouldHaveLength, 1)
+				So(err, ShouldNotBeEmpty)
+				So(err.Error(), ShouldEqual, "failed to store session")
+			})
+		})
+	})
+
+	Convey("Given an  invalid session", t, func() {
+		mockRedisClient, mockClient := setUpMocks(*redis.NewStatusCmd())
+
+		var s *session.Session = nil
+
+		Convey("When cache attempts to store session", func() {
+			err := mockClient.Set(s)
+
+			Convey("Then session will not be stored", func() {
+				So(mockRedisClient.SetCalls(), ShouldHaveLength, 0)
+				So(err, ShouldNotBeEmpty)
+				So(err.Error(), ShouldEqual, "session is empty")
+			})
+		})
+	})
 }
 
 func setUpClient(addr, password string, database int, ttl time.Duration) (*Client, error){
@@ -49,4 +109,18 @@ func setUpClient(addr, password string, database int, ttl time.Duration) (*Clien
 		TTL:      ttl,
 	})
 	return c, err
+}
+
+func setUpMocks(statusCmd redis.StatusCmd) (*mock.RedisClienterMock, *Client) {
+	mockRedisClient := &mock.RedisClienterMock{
+		PingFunc: nil,
+		SetFunc:  func(key string, value interface{}, ttl time.Duration) *redis.StatusCmd {
+			return &statusCmd
+		}}
+	return mockRedisClient, &Client{
+		client: RedisClient{
+			client: mockRedisClient,
+		},
+		ttl:    0,
+	}
 }
