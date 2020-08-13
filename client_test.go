@@ -2,6 +2,7 @@ package dpredis
 
 import (
 	"errors"
+	"github.com/ONSdigital/dp-redis/interfaces"
 	"testing"
 	"time"
 
@@ -114,7 +115,7 @@ func setUpClient(addr, password string, database int, ttl time.Duration) (*Clien
 func setUpMocks(statusCmd redis.StatusCmd) (*mock.RedisClienterMock, *Client) {
 	mockRedisClient := &mock.RedisClienterMock{
 		PingFunc: nil,
-		SetFunc:  func(key string, value interface{}, ttl time.Duration) *redis.StatusCmd {
+		SetFunc:  func(key string, value interface{}, ttl time.Duration) interfaces.Resulter {
 			return &statusCmd
 		}}
 	return mockRedisClient, &Client{

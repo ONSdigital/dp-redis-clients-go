@@ -5,7 +5,6 @@ package mock
 
 import (
 	"github.com/ONSdigital/dp-redis/interfaces"
-	"github.com/go-redis/redis"
 	"sync"
 	"time"
 )
@@ -25,10 +24,10 @@ var _ interfaces.RedisClienter = &RedisClienterMock{}
 //
 //         // make and configure a mocked interfaces.RedisClienter
 //         mockedRedisClienter := &RedisClienterMock{
-//             PingFunc: func() *redis.StatusCmd {
+//             PingFunc: func() interfaces.Resulter {
 // 	               panic("mock out the Ping method")
 //             },
-//             SetFunc: func(in1 string, in2 interface{}, in3 time.Duration) *redis.StatusCmd {
+//             SetFunc: func(in1 string, in2 interface{}, in3 time.Duration) interfaces.Resulter {
 // 	               panic("mock out the Set method")
 //             },
 //         }
@@ -39,10 +38,10 @@ var _ interfaces.RedisClienter = &RedisClienterMock{}
 //     }
 type RedisClienterMock struct {
 	// PingFunc mocks the Ping method.
-	PingFunc func() *redis.StatusCmd
+	PingFunc func() interfaces.Resulter
 
 	// SetFunc mocks the Set method.
-	SetFunc func(in1 string, in2 interface{}, in3 time.Duration) *redis.StatusCmd
+	SetFunc func(in1 string, in2 interface{}, in3 time.Duration) interfaces.Resulter
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -62,7 +61,7 @@ type RedisClienterMock struct {
 }
 
 // Ping calls PingFunc.
-func (mock *RedisClienterMock) Ping() *redis.StatusCmd {
+func (mock *RedisClienterMock) Ping() interfaces.Resulter {
 	if mock.PingFunc == nil {
 		panic("RedisClienterMock.PingFunc: method is nil but RedisClienter.Ping was just called")
 	}
@@ -88,7 +87,7 @@ func (mock *RedisClienterMock) PingCalls() []struct {
 }
 
 // Set calls SetFunc.
-func (mock *RedisClienterMock) Set(in1 string, in2 interface{}, in3 time.Duration) *redis.StatusCmd {
+func (mock *RedisClienterMock) Set(in1 string, in2 interface{}, in3 time.Duration) interfaces.Resulter {
 	if mock.SetFunc == nil {
 		panic("RedisClienterMock.SetFunc: method is nil but RedisClienter.Set was just called")
 	}
