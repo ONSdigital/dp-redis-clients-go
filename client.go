@@ -76,11 +76,11 @@ func (c *Client) Set(s *session.Session) error {
 }
 
 // Set - redis implementation of Set
-func (rc *RedisClient) Set(key string, value string, ttl time.Duration) Resulter {
+func (rc *RedisClient) Set(key string, value string, ttl time.Duration) *redis.StatusCmd {
 	return rc.client.Set(key, value, ttl)
 }
 
 // Ping - redis implementation of Ping
-func (rc RedisClient) Ping() Resulter {
+func (rc RedisClient) Ping() *redis.StatusCmd {
 	return rc.client.Ping()
 }
