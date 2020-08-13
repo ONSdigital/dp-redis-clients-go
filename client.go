@@ -2,6 +2,7 @@ package dpredis
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -59,28 +60,56 @@ func (c *Client) Set(s *session.Session) error {
 		return errors.New("session is empty")
 	}
 
-	json, err := s.MarshalJSON()
+	sJSON, err := s.MarshalJSON()
 	if err != nil {
 		log.Event(ctx, "failed to marshal session", log.Error(err), log.ERROR)
 		return err
 	}
 
-	msg, err := c.client.Set(s.ID, string(json), c.ttl).Result()
+	msg, err := c.client.Set(s.ID, sJSON, c.ttl).Result()
 	if err != nil {
 		log.Event(ctx, msg, log.Error(err), log.ERROR)
 		return err
 	}
-	log.Event(ctx, msg, log.INFO)
 
 	return nil
 }
 
+// GetByID - gets a session from redis using its ID
+func (c *Client) GetByID(id string) (*session.Session, error) {
+	if id == "" {
+		log.Event(ctx, "id value is blank", log.ERROR)
+		return nil, errors.New("id value is blank")
+	}
+
+	msg, err := c.client.Get(id).Result()
+	if err != nil {
+		log.Event(ctx, msg, log.Error(err), log.ERROR)
+		return nil, err
+	}
+
+	var s *session.Session
+
+	err = json.Unmarshal([]byte(msg), &s)
+	if err != nil {
+		log.Event(ctx, "failed to unmarshal session", log.Error(err), log.ERROR)
+		return nil, err
+	}
+
+	return s, nil
+}
+
 // Set - redis implementation of Set
-func (rc *RedisClient) Set(key string, value string, ttl time.Duration) *redis.StatusCmd {
+func (rc *RedisClient) Set(key string, value interface{}, ttl time.Duration) *redis.StatusCmd {
 	return rc.client.Set(key, value, ttl)
 }
 
+// Get - redis implementation of Get
+func (rc *RedisClient) Get(key string) *redis.StringCmd {
+	return rc.client.Get(key)
+}
+
 // Ping - redis implementation of Ping
-func (rc RedisClient) Ping() *redis.StatusCmd {
+func (rc *RedisClient) Ping() *redis.StatusCmd {
 	return rc.client.Ping()
 }

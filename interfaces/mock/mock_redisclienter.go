@@ -11,6 +11,7 @@ import (
 )
 
 var (
+	lockRedisClienterMockGet  sync.RWMutex
 	lockRedisClienterMockPing sync.RWMutex
 	lockRedisClienterMockSet  sync.RWMutex
 )
@@ -25,6 +26,9 @@ var _ interfaces.RedisClienter = &RedisClienterMock{}
 //
 //         // make and configure a mocked interfaces.RedisClienter
 //         mockedRedisClienter := &RedisClienterMock{
+//             GetFunc: func(in1 string) *redis.StringCmd {
+// 	               panic("mock out the Get method")
+//             },
 //             PingFunc: func() *redis.StatusCmd {
 // 	               panic("mock out the Ping method")
 //             },
@@ -38,6 +42,9 @@ var _ interfaces.RedisClienter = &RedisClienterMock{}
 //
 //     }
 type RedisClienterMock struct {
+	// GetFunc mocks the Get method.
+	GetFunc func(in1 string) *redis.StringCmd
+
 	// PingFunc mocks the Ping method.
 	PingFunc func() *redis.StatusCmd
 
@@ -46,6 +53,11 @@ type RedisClienterMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// Get holds details about calls to the Get method.
+		Get []struct {
+			// In1 is the in1 argument value.
+			In1 string
+		}
 		// Ping holds details about calls to the Ping method.
 		Ping []struct {
 		}
@@ -59,6 +71,37 @@ type RedisClienterMock struct {
 			In3 time.Duration
 		}
 	}
+}
+
+// Get calls GetFunc.
+func (mock *RedisClienterMock) Get(in1 string) *redis.StringCmd {
+	if mock.GetFunc == nil {
+		panic("RedisClienterMock.GetFunc: method is nil but RedisClienter.Get was just called")
+	}
+	callInfo := struct {
+		In1 string
+	}{
+		In1: in1,
+	}
+	lockRedisClienterMockGet.Lock()
+	mock.calls.Get = append(mock.calls.Get, callInfo)
+	lockRedisClienterMockGet.Unlock()
+	return mock.GetFunc(in1)
+}
+
+// GetCalls gets all the calls that were made to Get.
+// Check the length with:
+//     len(mockedRedisClienter.GetCalls())
+func (mock *RedisClienterMock) GetCalls() []struct {
+	In1 string
+} {
+	var calls []struct {
+		In1 string
+	}
+	lockRedisClienterMockGet.RLock()
+	calls = mock.calls.Get
+	lockRedisClienterMockGet.RUnlock()
+	return calls
 }
 
 // Ping calls PingFunc.
