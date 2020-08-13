@@ -81,6 +81,6 @@ func (rc *RedisClient) Set(key string, value string, ttl time.Duration) *redis.S
 }
 
 // Ping - redis implementation of Ping
-func (rc RedisClient) Ping() *redis.StatusCmd {
+func (rc *RedisClient) Ping() Resulter {
 	return rc.client.Ping()
 }
