@@ -28,7 +28,7 @@ var _ interfaces.RedisClienter = &RedisClienterMock{}
 //             PingFunc: func() *redis.StatusCmd {
 // 	               panic("mock out the Ping method")
 //             },
-//             SetFunc: func(in1 string, in2 interface{}, in3 time.Duration) *redis.StatusCmd {
+//             SetFunc: func(key string, value interface{}, expiration time.Duration) *redis.StatusCmd {
 // 	               panic("mock out the Set method")
 //             },
 //         }
@@ -42,7 +42,7 @@ type RedisClienterMock struct {
 	PingFunc func() *redis.StatusCmd
 
 	// SetFunc mocks the Set method.
-	SetFunc func(in1 string, in2 interface{}, in3 time.Duration) *redis.StatusCmd
+	SetFunc func(key string, value interface{}, expiration time.Duration) *redis.StatusCmd
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -51,12 +51,12 @@ type RedisClienterMock struct {
 		}
 		// Set holds details about calls to the Set method.
 		Set []struct {
-			// In1 is the in1 argument value.
-			In1 string
-			// In2 is the in2 argument value.
-			In2 interface{}
-			// In3 is the in3 argument value.
-			In3 time.Duration
+			// Key is the key argument value.
+			Key string
+			// Value is the value argument value.
+			Value interface{}
+			// Expiration is the expiration argument value.
+			Expiration time.Duration
 		}
 	}
 }
@@ -88,37 +88,37 @@ func (mock *RedisClienterMock) PingCalls() []struct {
 }
 
 // Set calls SetFunc.
-func (mock *RedisClienterMock) Set(in1 string, in2 interface{}, in3 time.Duration) *redis.StatusCmd {
+func (mock *RedisClienterMock) Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd {
 	if mock.SetFunc == nil {
 		panic("RedisClienterMock.SetFunc: method is nil but RedisClienter.Set was just called")
 	}
 	callInfo := struct {
-		In1 string
-		In2 interface{}
-		In3 time.Duration
+		Key        string
+		Value      interface{}
+		Expiration time.Duration
 	}{
-		In1: in1,
-		In2: in2,
-		In3: in3,
+		Key:        key,
+		Value:      value,
+		Expiration: expiration,
 	}
 	lockRedisClienterMockSet.Lock()
 	mock.calls.Set = append(mock.calls.Set, callInfo)
 	lockRedisClienterMockSet.Unlock()
-	return mock.SetFunc(in1, in2, in3)
+	return mock.SetFunc(key, value, expiration)
 }
 
 // SetCalls gets all the calls that were made to Set.
 // Check the length with:
 //     len(mockedRedisClienter.SetCalls())
 func (mock *RedisClienterMock) SetCalls() []struct {
-	In1 string
-	In2 interface{}
-	In3 time.Duration
+	Key        string
+	Value      interface{}
+	Expiration time.Duration
 } {
 	var calls []struct {
-		In1 string
-		In2 interface{}
-		In3 time.Duration
+		Key        string
+		Value      interface{}
+		Expiration time.Duration
 	}
 	lockRedisClienterMockSet.RLock()
 	calls = mock.calls.Set

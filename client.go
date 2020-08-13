@@ -76,8 +76,8 @@ func (c *Client) Set(s *session.Session) error {
 }
 
 // Set - redis implementation of Set
-func (rc *RedisClient) Set(key string, value string, ttl time.Duration) *redis.StatusCmd {
-	return rc.client.Set(key, value, ttl)
+func (rc *RedisClient) Set(key string, value string, expiration time.Duration) *redis.StatusCmd {
+	return rc.client.Set(key, value, expiration)
 }
 
 // Ping - redis implementation of Ping

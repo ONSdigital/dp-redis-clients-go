@@ -114,7 +114,7 @@ func setUpClient(addr, password string, database int, ttl time.Duration) (*Clien
 func setUpMocks(statusCmd redis.StatusCmd) (*mock.RedisClienterMock, *Client) {
 	mockRedisClient := &mock.RedisClienterMock{
 		PingFunc: nil,
-		SetFunc:  func(key string, value interface{}, ttl time.Duration) *redis.StatusCmd {
+		SetFunc:  func(key string, value interface{}, expiration time.Duration) *redis.StatusCmd {
 			return &statusCmd
 		}}
 	return mockRedisClient, &Client{
