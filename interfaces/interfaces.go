@@ -11,6 +11,6 @@ import (
 // RedisClienter - interface for redis
 type RedisClienter interface {
 	Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd
-	Get(string) *redis.StringCmd
+	Get(key string) *redis.StringCmd
 	Ping() *redis.StatusCmd
 }

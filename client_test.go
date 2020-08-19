@@ -1,7 +1,7 @@
 package dpredis
 
 import (
-	"encoding/json"
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -14,11 +14,19 @@ import (
 
 const testTTL = 30 * time.Minute
 
-var resp = []byte(`{"id":"1234","email":"user@email.com","start":"2020-08-13T08:40:18.652Z","last_accessed":"2020-08-13T08:40:18.652Z"}`)
+var (
+	resp = []byte(`{"id":"1234","email":"user@email.com","start":"2020-08-13T08:40:18.652Z","last_accessed":"2020-08-13T08:40:18.652Z"}`)
+	ctx  = context.Background()
+)
 
 func TestNewClient(t *testing.T) {
 	Convey("Given correct redis config", t, func() {
-		c, err := setUpClient("123.0.0.1", "1234", 0, testTTL)
+		c, err := NewClient(Config{
+			Addr:     "123.0.0.1",
+			Password: "1234",
+			Database: 0,
+			TTL:      testTTL,
+		})
 
 		Convey("Then the client will be created", func() {
 			So(err, ShouldBeNil)
@@ -27,7 +35,12 @@ func TestNewClient(t *testing.T) {
 	})
 
 	Convey("Given redis config with missing address", t, func() {
-		c, err := setUpClient("", "1234", 0, testTTL)
+		c, err := NewClient(Config{
+			Addr:     "",
+			Password: "1234",
+			Database: 0,
+			TTL:      testTTL,
+		})
 
 		Convey("Then the client will fail to be created", func() {
 			So(c, ShouldBeNil)
@@ -37,7 +50,12 @@ func TestNewClient(t *testing.T) {
 	})
 
 	Convey("Given redis config with missing password", t, func() {
-		c, err := setUpClient("123.0.0.1", "", 0, testTTL)
+		c, err := NewClient(Config{
+			Addr:     "123.0.0.1",
+			Password: "",
+			Database: 0,
+			TTL:      testTTL,
+		})
 
 		Convey("Then the client will fail to be created", func() {
 			So(c, ShouldBeNil)
@@ -47,7 +65,12 @@ func TestNewClient(t *testing.T) {
 	})
 
 	Convey("Given redis config with a zero ttl", t, func() {
-		c, err := setUpClient("123.0.0.1", "1234", 0, 0)
+		c, err := NewClient(Config{
+			Addr:     "123.0.0.1",
+			Password: "1234",
+			Database: 0,
+			TTL:      0,
+		})
 
 		Convey("Then the client will fail to be created", func() {
 			So(c, ShouldBeNil)
@@ -59,7 +82,7 @@ func TestNewClient(t *testing.T) {
 
 func TestClient_Set(t *testing.T) {
 	Convey("Given a valid session", t, func() {
-		mockRedisClient, mockClient := setUpMocks(*redis.NewStatusResult("success", nil), *redis.NewStringCmd())
+		mockRedisClient, client := setUpMocks(*redis.NewStatusResult("success", nil), *redis.NewStringCmd())
 
 		s := &session.Session{
 			ID:           "1234",
@@ -69,7 +92,7 @@ func TestClient_Set(t *testing.T) {
 		}
 
 		Convey("When cache attempts to store session", func() {
-			err := mockClient.Set(s)
+			err := client.Set(ctx, s)
 
 			Convey("Then session should be stored", func() {
 				So(err, ShouldBeNil)
@@ -79,7 +102,7 @@ func TestClient_Set(t *testing.T) {
 	})
 
 	Convey("Given a valid session", t, func() {
-		mockRedisClient, mockClient := setUpMocks(*redis.NewStatusResult("fail", errors.New("failed to store session")), *redis.NewStringCmd())
+		mockRedisClient, client := setUpMocks(*redis.NewStatusResult("fail", errors.New("failed to store session")), *redis.NewStringCmd())
 
 		s := &session.Session{
 			ID:           "1234",
@@ -89,7 +112,7 @@ func TestClient_Set(t *testing.T) {
 		}
 
 		Convey("When cache attempts to store session", func() {
-			err := mockClient.Set(s)
+			err := client.Set(ctx, s)
 
 			Convey("Then session will not be stored", func() {
 				So(mockRedisClient.SetCalls(), ShouldHaveLength, 1)
@@ -100,17 +123,17 @@ func TestClient_Set(t *testing.T) {
 	})
 
 	Convey("Given an invalid session", t, func() {
-		mockRedisClient, mockClient := setUpMocks(*redis.NewStatusCmd(), *redis.NewStringCmd())
+		mockRedisClient, client := setUpMocks(*redis.NewStatusCmd(), *redis.NewStringCmd())
 
 		var s *session.Session = nil
 
 		Convey("When cache attempts to store session", func() {
-			err := mockClient.Set(s)
+			err := client.Set(ctx, s)
 
 			Convey("Then session will not be stored", func() {
 				So(mockRedisClient.SetCalls(), ShouldHaveLength, 0)
 				So(err, ShouldNotBeEmpty)
-				So(err.Error(), ShouldEqual, "session is empty")
+				So(err.Error(), ShouldEqual, ErrEmptySession)
 			})
 		})
 	})
@@ -118,49 +141,44 @@ func TestClient_Set(t *testing.T) {
 
 func TestClient_GetByID(t *testing.T) {
 	Convey("Given a session ID", t, func() {
-		mockRedisClient, mockClient := setUpMocks(*redis.NewStatusCmd(), *redis.NewStringResult(string(resp), nil))
+		mockRedisClient, client := setUpMocks(*redis.NewStatusCmd(), *redis.NewStringResult(string(resp), nil))
 
 		Convey("When cache attempts to get session", func() {
-			s, err := mockClient.GetByID("1234")
-			So(err, ShouldBeNil)
-
-			msg, err := mockRedisClient.Get(s.ID).Result()
-			So(err, ShouldBeNil)
-
-			var storedSession session.Session
-			err = json.Unmarshal([]byte(msg), &storedSession)
+			s, err := client.GetByID(ctx, "1234")
 			So(err, ShouldBeNil)
 
 			Convey("Then session is returned", func() {
-				So(storedSession.ID, ShouldEqual, s.ID)
-				So(storedSession.Email, ShouldEqual, s.Email)
+				So(mockRedisClient.GetCalls(), ShouldHaveLength, 1)
+				So(s, ShouldNotBeEmpty)
+				So(s.ID, ShouldEqual, "1234")
 			})
 		})
 	})
 
 	Convey("Given a blank session ID", t, func() {
-		_, mockClient := setUpMocks(*redis.NewStatusCmd(), *redis.NewStringCmd())
+		mockRedisClient, client := setUpMocks(*redis.NewStatusCmd(), *redis.NewStringCmd())
 
 		Convey("When cache attempts to get session", func() {
-			_, err := mockClient.GetByID("")
+			s, err := client.GetByID(ctx, "")
 
-			Convey("Then session is returned", func() {
+			Convey("Then session is not returned", func() {
+				So(mockRedisClient.GetCalls(), ShouldHaveLength, 0)
+				So(s, ShouldBeNil)
 				So(err, ShouldNotBeEmpty)
-				So(err.Error(), ShouldEqual, "id value is blank")
+				So(err.Error(), ShouldEqual, ErrEmptySessionID)
 			})
 		})
 	})
 
 	Convey("Given a session ID", t, func() {
-		mockRedisClient, _ := setUpMocks(*redis.NewStatusCmd(), *redis.NewStringResult("", errors.New("")))
+		mockRedisClient, client := setUpMocks(*redis.NewStatusCmd(), *redis.NewStringResult("", errors.New("unexpected end of JSON input")))
 
 		Convey("When cache attempts to get session", func() {
-			msg, err := mockRedisClient.Get("1234").Result()
+			s, err := client.GetByID(ctx,"1234")
 
-			var storedSession session.Session
-			err = json.Unmarshal([]byte(msg), &storedSession)
-
-			Convey("Then session is returned", func() {
+			Convey("Then session is not returned", func() {
+				So(mockRedisClient.GetCalls(), ShouldHaveLength, 1)
+				So(s, ShouldBeNil)
 				So(err, ShouldNotBeEmpty)
 				So(err.Error(), ShouldEqual, "unexpected end of JSON input")
 			})
@@ -168,29 +186,19 @@ func TestClient_GetByID(t *testing.T) {
 	})
 }
 
-func setUpClient(addr, password string, database int, ttl time.Duration) (*Client, error) {
-	c, err := NewClient(Config{
-		Addr:     addr,
-		Password: password,
-		Database: database,
-		TTL:      ttl,
-	})
-	return c, err
-}
-
 func setUpMocks(statusCmd redis.StatusCmd, stringCmd redis.StringCmd) (*mock.RedisClienterMock, *Client) {
 	mockRedisClient := &mock.RedisClienterMock{
 		PingFunc: nil,
-		SetFunc:  func(key string, value interface{}, ttl time.Duration) *redis.StatusCmd {
+		SetFunc: func(key string, value interface{}, ttl time.Duration) *redis.StatusCmd {
 			return &statusCmd
 		},
-		GetFunc: func(id string) *redis.StringCmd {
+		GetFunc: func(key string) *redis.StringCmd {
 			return &stringCmd
 		}}
 	return mockRedisClient, &Client{
 		client: RedisClient{
 			client: mockRedisClient,
 		},
-		ttl: 0,
+		ttl: testTTL,
 	}
 }

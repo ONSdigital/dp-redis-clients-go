@@ -26,7 +26,7 @@ var _ interfaces.RedisClienter = &RedisClienterMock{}
 //
 //         // make and configure a mocked interfaces.RedisClienter
 //         mockedRedisClienter := &RedisClienterMock{
-//             GetFunc: func(in1 string) *redis.StringCmd {
+//             GetFunc: func(key string) *redis.StringCmd {
 // 	               panic("mock out the Get method")
 //             },
 //             PingFunc: func() *redis.StatusCmd {
@@ -43,7 +43,7 @@ var _ interfaces.RedisClienter = &RedisClienterMock{}
 //     }
 type RedisClienterMock struct {
 	// GetFunc mocks the Get method.
-	GetFunc func(in1 string) *redis.StringCmd
+	GetFunc func(key string) *redis.StringCmd
 
 	// PingFunc mocks the Ping method.
 	PingFunc func() *redis.StatusCmd
@@ -55,8 +55,8 @@ type RedisClienterMock struct {
 	calls struct {
 		// Get holds details about calls to the Get method.
 		Get []struct {
-			// In1 is the in1 argument value.
-			In1 string
+			// Key is the key argument value.
+			Key string
 		}
 		// Ping holds details about calls to the Ping method.
 		Ping []struct {
@@ -74,29 +74,29 @@ type RedisClienterMock struct {
 }
 
 // Get calls GetFunc.
-func (mock *RedisClienterMock) Get(in1 string) *redis.StringCmd {
+func (mock *RedisClienterMock) Get(key string) *redis.StringCmd {
 	if mock.GetFunc == nil {
 		panic("RedisClienterMock.GetFunc: method is nil but RedisClienter.Get was just called")
 	}
 	callInfo := struct {
-		In1 string
+		Key string
 	}{
-		In1: in1,
+		Key: key,
 	}
 	lockRedisClienterMockGet.Lock()
 	mock.calls.Get = append(mock.calls.Get, callInfo)
 	lockRedisClienterMockGet.Unlock()
-	return mock.GetFunc(in1)
+	return mock.GetFunc(key)
 }
 
 // GetCalls gets all the calls that were made to Get.
 // Check the length with:
 //     len(mockedRedisClienter.GetCalls())
 func (mock *RedisClienterMock) GetCalls() []struct {
-	In1 string
+	Key string
 } {
 	var calls []struct {
-		In1 string
+		Key string
 	}
 	lockRedisClienterMockGet.RLock()
 	calls = mock.calls.Get

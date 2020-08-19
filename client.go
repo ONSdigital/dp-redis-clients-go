@@ -12,7 +12,12 @@ import (
 	"github.com/go-redis/redis"
 )
 
-var ctx = context.Background()
+const (
+	ErrEmptySessionID    = "session id required but was empty"
+	ErrEmptySession      = "session is empty"
+	ErrFailedToUnmarshal = "failed to unmarshal get session json response"
+	ErrFailedToMarshal   = "failed to marshal session"
+)
 
 // RedisClient - structure for the redis client
 type RedisClient struct {
@@ -48,25 +53,25 @@ func NewClient(c Config) (*Client, error) {
 	}
 
 	return &Client{
-		client:  RedisClient{client:redis.NewClient(&redis.Options{
-			Addr: c.Addr,
+		client: RedisClient{client: redis.NewClient(&redis.Options{
+			Addr:     c.Addr,
 			Password: c.Password,
-			DB: c.Database,
+			DB:       c.Database,
 		})},
-		ttl:     c.TTL,
+		ttl: c.TTL,
 	}, nil
 }
 
 // Set - add session to redis
-func (c *Client) Set(s *session.Session) error {
+func (c *Client) Set(ctx context.Context, s *session.Session) error {
 	if s == nil {
-		log.Event(ctx, "session is empty", log.ERROR)
-		return errors.New("session is empty")
+		log.Event(ctx, ErrEmptySession, log.ERROR)
+		return errors.New(ErrEmptySession)
 	}
 
 	sJSON, err := s.MarshalJSON()
 	if err != nil {
-		log.Event(ctx, "failed to marshal session", log.Error(err), log.ERROR)
+		log.Event(ctx, ErrFailedToMarshal, log.Error(err), log.ERROR)
 		return err
 	}
 
@@ -80,10 +85,10 @@ func (c *Client) Set(s *session.Session) error {
 }
 
 // GetByID - gets a session from redis using its ID
-func (c *Client) GetByID(id string) (*session.Session, error) {
+func (c *Client) GetByID(ctx context.Context, id string) (*session.Session, error) {
 	if id == "" {
-		log.Event(ctx, "id value is blank", log.ERROR)
-		return nil, errors.New("id value is blank")
+		log.Event(ctx, ErrEmptySessionID, log.ERROR)
+		return nil, errors.New(ErrEmptySessionID)
 	}
 
 	msg, err := c.client.Get(id).Result()
@@ -96,7 +101,7 @@ func (c *Client) GetByID(id string) (*session.Session, error) {
 
 	err = json.Unmarshal([]byte(msg), &s)
 	if err != nil {
-		log.Event(ctx, "failed to unmarshal session", log.Error(err), log.ERROR)
+		log.Event(ctx, ErrFailedToUnmarshal, log.Error(err), log.ERROR)
 		return nil, err
 	}
 
@@ -104,7 +109,7 @@ func (c *Client) GetByID(id string) (*session.Session, error) {
 }
 
 // Set - redis implementation of Set
-func (rc *RedisClient) Set(key string, value string, expiration time.Duration) *redis.StatusCmd {
+func (rc *RedisClient) Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd {
 	return rc.client.Set(key, value, expiration)
 }
 
