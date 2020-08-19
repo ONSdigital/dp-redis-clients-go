@@ -2,6 +2,7 @@ package dpredis
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	. "github.com/ONSdigital/dp-redis/interfaces"
@@ -10,10 +11,10 @@ import (
 )
 
 var (
-	ErrEmptySession   = errors.New("session is empty")
-	ErrEmptyAddress   = errors.New("address is empty")
-	ErrEmptyPassword  = errors.New("password is empty")
-	ErrInvalidTTL     = errors.New("ttl should not be zero")
+	ErrEmptySession   = errors.New("session required but was empty")
+	ErrEmptyAddress   = errors.New("redis host address required but was empty")
+	ErrEmptyPassword  = errors.New("redis password required but was empty")
+	ErrInvalidTTL     = errors.New("redis client ttl cannot be 0")
 )
 
 // RedisClient - structure for the redis client
@@ -72,7 +73,7 @@ func (c *Client) Set(s *session.Session) error {
 
 	err = c.client.Set(s.ID, string(json), c.ttl).Err()
 	if err != nil {
-		return err
+		return fmt.Errorf("redis client.Set returned an unexpected error: %w", err)
 	}
 
 	return nil
