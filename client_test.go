@@ -12,11 +12,13 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+const testTTL = 30 * time.Minute
+
 var resp = []byte(`{"id":"1234","email":"user@email.com","start":"2020-08-13T08:40:18.652Z","last_accessed":"2020-08-13T08:40:18.652Z"}`)
 
 func TestNewClient(t *testing.T) {
 	Convey("Given correct redis config", t, func() {
-		c, err := setUpClient("123.0.0.1", "1234", 0, 0)
+		c, err := setUpClient("123.0.0.1", "1234", 0, testTTL)
 
 		Convey("Then the client will be created", func() {
 			So(err, ShouldBeNil)
@@ -25,7 +27,7 @@ func TestNewClient(t *testing.T) {
 	})
 
 	Convey("Given redis config with missing address", t, func() {
-		c, err := setUpClient("", "1234", 0, 0)
+		c, err := setUpClient("", "1234", 0, testTTL)
 
 		Convey("Then the client will fail to be created", func() {
 			So(c, ShouldBeNil)
@@ -35,12 +37,22 @@ func TestNewClient(t *testing.T) {
 	})
 
 	Convey("Given redis config with missing password", t, func() {
-		c, err := setUpClient("123.0.0.1", "", 0, 0)
+		c, err := setUpClient("123.0.0.1", "", 0, testTTL)
 
 		Convey("Then the client will fail to be created", func() {
 			So(c, ShouldBeNil)
 			So(err, ShouldNotBeEmpty)
 			So(err.Error(), ShouldEqual, "password is missing")
+		})
+	})
+
+	Convey("Given redis config with a zero ttl", t, func() {
+		c, err := setUpClient("123.0.0.1", "1234", 0, 0)
+
+		Convey("Then the client will fail to be created", func() {
+			So(c, ShouldBeNil)
+			So(err, ShouldNotBeEmpty)
+			So(err.Error(), ShouldEqual, "zero is not a valid ttl")
 		})
 	})
 }
@@ -169,7 +181,7 @@ func setUpClient(addr, password string, database int, ttl time.Duration) (*Clien
 func setUpMocks(statusCmd redis.StatusCmd, stringCmd redis.StringCmd) (*mock.RedisClienterMock, *Client) {
 	mockRedisClient := &mock.RedisClienterMock{
 		PingFunc: nil,
-		SetFunc: func(key string, value interface{}, ttl time.Duration) *redis.StatusCmd {
+		SetFunc:  func(key string, value interface{}, ttl time.Duration) *redis.StatusCmd {
 			return &statusCmd
 		},
 		GetFunc: func(id string) *redis.StringCmd {

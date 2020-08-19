@@ -10,7 +10,7 @@ import (
 
 // RedisClienter - interface for redis
 type RedisClienter interface {
-	Set(string, interface{}, time.Duration) *redis.StatusCmd
+	Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd
 	Get(string) *redis.StringCmd
 	Ping() *redis.StatusCmd
 }

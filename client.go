@@ -43,13 +43,17 @@ func NewClient(c Config) (*Client, error) {
 		return nil, errors.New("password is missing")
 	}
 
+	if c.TTL == 0 {
+		return nil, errors.New("zero is not a valid ttl")
+	}
+
 	return &Client{
 		client:  RedisClient{client:redis.NewClient(&redis.Options{
 			Addr: c.Addr,
 			Password: c.Password,
 			DB: c.Database,
 		})},
-		ttl:     0,
+		ttl:     c.TTL,
 	}, nil
 }
 
@@ -100,8 +104,8 @@ func (c *Client) GetByID(id string) (*session.Session, error) {
 }
 
 // Set - redis implementation of Set
-func (rc *RedisClient) Set(key string, value interface{}, ttl time.Duration) *redis.StatusCmd {
-	return rc.client.Set(key, value, ttl)
+func (rc *RedisClient) Set(key string, value string, expiration time.Duration) *redis.StatusCmd {
+	return rc.client.Set(key, value, expiration)
 }
 
 // Get - redis implementation of Get
