@@ -1,17 +1,20 @@
 package dpredis
 
 import (
-	"context"
 	"errors"
 	"time"
 
 	. "github.com/ONSdigital/dp-redis/interfaces"
 	"github.com/ONSdigital/dp-sessions-api/session"
-	"github.com/ONSdigital/log.go/log"
 	"github.com/go-redis/redis"
 )
 
-var ctx = context.Background()
+var (
+	ErrEmptySession   = errors.New("session is empty")
+	ErrEmptyAddress   = errors.New("address is empty")
+	ErrEmptyPassword  = errors.New("password is empty")
+	ErrInvalidTTL     = errors.New("ttl should not be zero")
+)
 
 // RedisClient - structure for the redis client
 type RedisClient struct {
@@ -35,15 +38,15 @@ type Config struct {
 // NewClient - returns new redis client with provided config options
 func NewClient(c Config) (*Client, error) {
 	if c.Addr == "" {
-		return nil, errors.New("address is missing")
+		return nil, ErrEmptyAddress
 	}
 
 	if c.Password == "" {
-		return nil, errors.New("password is missing")
+		return nil, ErrEmptyPassword
 	}
 
 	if c.TTL == 0 {
-		return nil, errors.New("zero is not a valid ttl")
+		return nil, ErrInvalidTTL
 	}
 
 	return &Client{
@@ -59,22 +62,18 @@ func NewClient(c Config) (*Client, error) {
 // Set - add session to redis
 func (c *Client) Set(s *session.Session) error {
 	if s == nil {
-		log.Event(ctx, "session is empty", log.ERROR)
-		return errors.New("session is empty")
+		return ErrEmptySession
 	}
 
 	json, err := s.MarshalJSON()
 	if err != nil {
-		log.Event(ctx, "failed to marshal session", log.Error(err), log.ERROR)
 		return err
 	}
 
-	msg, err := c.client.Set(s.ID, string(json), c.ttl).Result()
+	err = c.client.Set(s.ID, string(json), c.ttl).Err()
 	if err != nil {
-		log.Event(ctx, msg, log.Error(err), log.ERROR)
 		return err
 	}
-	log.Event(ctx, msg, log.INFO)
 
 	return nil
 }

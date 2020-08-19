@@ -15,7 +15,12 @@ const testTTL = 30 * time.Minute
 
 func TestNewClient(t *testing.T) {
 	Convey("Given correct redis config", t, func() {
-		c, err := setUpClient("123.0.0.1", "1234", 0, testTTL)
+		c, err := NewClient(Config{
+			Addr:     "123.0.0.1",
+			Password: "1234",
+			Database: 0,
+			TTL:      testTTL,
+		})
 
 		Convey("Then the client will be created", func() {
 			So(err, ShouldBeNil)
@@ -24,32 +29,47 @@ func TestNewClient(t *testing.T) {
 	})
 
 	Convey("Given redis config with missing address", t, func() {
-		c, err := setUpClient("", "1234", 0, testTTL)
+		c, err := NewClient(Config{
+			Addr:     "",
+			Password: "1234",
+			Database: 0,
+			TTL:      testTTL,
+		})
 
 		Convey("Then the client will fail to be created", func() {
 			So(c, ShouldBeNil)
 			So(err, ShouldNotBeEmpty)
-			So(err.Error(), ShouldEqual, "address is missing")
+			So(err, ShouldEqual, ErrEmptyAddress)
 		})
 	})
 
 	Convey("Given redis config with missing password", t, func() {
-		c, err := setUpClient("123.0.0.1", "", 0, testTTL)
+		c, err := NewClient(Config{
+			Addr:     "123.0.0.1",
+			Password: "",
+			Database: 0,
+			TTL:      testTTL,
+		})
 
 		Convey("Then the client will fail to be created", func() {
 			So(c, ShouldBeNil)
 			So(err, ShouldNotBeEmpty)
-			So(err.Error(), ShouldEqual, "password is missing")
+			So(err, ShouldEqual, ErrEmptyPassword)
 		})
 	})
 
 	Convey("Given redis config with a zero ttl", t, func() {
-		c, err := setUpClient("123.0.0.1", "1234", 0, 0)
+		c, err := NewClient(Config{
+			Addr:     "123.0.0.1",
+			Password: "1234",
+			Database: 0,
+			TTL:      0,
+		})
 
 		Convey("Then the client will fail to be created", func() {
 			So(c, ShouldBeNil)
 			So(err, ShouldNotBeEmpty)
-			So(err.Error(), ShouldEqual, "zero is not a valid ttl")
+			So(err, ShouldEqual, ErrInvalidTTL)
 		})
 	})
 }
@@ -111,16 +131,6 @@ func TestClient_Set(t *testing.T) {
 			})
 		})
 	})
-}
-
-func setUpClient(addr, password string, database int, ttl time.Duration) (*Client, error){
-	c, err := NewClient(Config{
-		Addr:     addr,
-		Password: password,
-		Database: database,
-		TTL:      ttl,
-	})
-	return c, err
 }
 
 func setUpMocks(statusCmd redis.StatusCmd) (*mock.RedisClienterMock, *Client) {
