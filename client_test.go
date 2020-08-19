@@ -111,7 +111,7 @@ func TestClient_Set(t *testing.T) {
 			Convey("Then session will not be stored", func() {
 				So(mockRedisClient.SetCalls(), ShouldHaveLength, 1)
 				So(err, ShouldNotBeEmpty)
-				So(err.Error(), ShouldEqual, "failed to store session")
+				So(err.Error(), ShouldEqual, "redis client.Set returned an unexpected error: failed to store session")
 			})
 		})
 	})
@@ -127,7 +127,7 @@ func TestClient_Set(t *testing.T) {
 			Convey("Then session will not be stored", func() {
 				So(mockRedisClient.SetCalls(), ShouldHaveLength, 0)
 				So(err, ShouldNotBeEmpty)
-				So(err.Error(), ShouldEqual, "session is empty")
+				So(err, ShouldEqual, ErrEmptySession)
 			})
 		})
 	})
