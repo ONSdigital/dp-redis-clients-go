@@ -11,9 +11,11 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+const testTTL = 30 * time.Minute
+
 func TestNewClient(t *testing.T) {
 	Convey("Given correct redis config", t, func() {
-		c, err := setUpClient("123.0.0.1", "1234", 0, 0)
+		c, err := setUpClient("123.0.0.1", "1234", 0, testTTL)
 
 		Convey("Then the client will be created", func() {
 			So(err, ShouldBeNil)
@@ -22,7 +24,7 @@ func TestNewClient(t *testing.T) {
 	})
 
 	Convey("Given redis config with missing address", t, func() {
-		c, err := setUpClient("", "1234", 0, 0)
+		c, err := setUpClient("", "1234", 0, testTTL)
 
 		Convey("Then the client will fail to be created", func() {
 			So(c, ShouldBeNil)
@@ -32,12 +34,22 @@ func TestNewClient(t *testing.T) {
 	})
 
 	Convey("Given redis config with missing password", t, func() {
-		c, err := setUpClient("123.0.0.1", "", 0, 0)
+		c, err := setUpClient("123.0.0.1", "", 0, testTTL)
 
 		Convey("Then the client will fail to be created", func() {
 			So(c, ShouldBeNil)
 			So(err, ShouldNotBeEmpty)
 			So(err.Error(), ShouldEqual, "password is missing")
+		})
+	})
+
+	Convey("Given redis config with a zero ttl", t, func() {
+		c, err := setUpClient("123.0.0.1", "1234", 0, 0)
+
+		Convey("Then the client will fail to be created", func() {
+			So(c, ShouldBeNil)
+			So(err, ShouldNotBeEmpty)
+			So(err.Error(), ShouldEqual, "zero is not a valid ttl")
 		})
 	})
 }
