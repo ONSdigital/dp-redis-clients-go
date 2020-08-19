@@ -1,22 +1,21 @@
 package dpredis
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"time"
 
 	. "github.com/ONSdigital/dp-redis/interfaces"
 	"github.com/ONSdigital/dp-sessions-api/session"
-	"github.com/ONSdigital/log.go/log"
 	"github.com/go-redis/redis"
 )
 
-const (
-	ErrEmptySessionID    = "session id required but was empty"
-	ErrEmptySession      = "session is empty"
-	ErrFailedToUnmarshal = "failed to unmarshal get session json response"
-	ErrFailedToMarshal   = "failed to marshal session"
+var (
+	ErrEmptySessionID = errors.New("session id required but was empty")
+	ErrEmptySession   = errors.New("session is empty")
+	ErrEmptyAddress   = errors.New("address is empty")
+	ErrEmptyPassword  = errors.New("password is empty")
+	ErrInvalidTTL     = errors.New("ttl should not be zero")
 )
 
 // RedisClient - structure for the redis client
@@ -41,15 +40,15 @@ type Config struct {
 // NewClient - returns new redis client with provided config options
 func NewClient(c Config) (*Client, error) {
 	if c.Addr == "" {
-		return nil, errors.New("address is missing")
+		return nil, ErrEmptyAddress
 	}
 
 	if c.Password == "" {
-		return nil, errors.New("password is missing")
+		return nil, ErrEmptyPassword
 	}
 
 	if c.TTL == 0 {
-		return nil, errors.New("zero is not a valid ttl")
+		return nil, ErrInvalidTTL
 	}
 
 	return &Client{
@@ -63,21 +62,18 @@ func NewClient(c Config) (*Client, error) {
 }
 
 // Set - add session to redis
-func (c *Client) Set(ctx context.Context, s *session.Session) error {
+func (c *Client) Set(s *session.Session) error {
 	if s == nil {
-		log.Event(ctx, ErrEmptySession, log.ERROR)
-		return errors.New(ErrEmptySession)
+		return ErrEmptySession
 	}
 
 	sJSON, err := s.MarshalJSON()
 	if err != nil {
-		log.Event(ctx, ErrFailedToMarshal, log.Error(err), log.ERROR)
 		return err
 	}
 
-	msg, err := c.client.Set(s.ID, sJSON, c.ttl).Result()
+	err = c.client.Set(s.ID, sJSON, c.ttl).Err()
 	if err != nil {
-		log.Event(ctx, msg, log.Error(err), log.ERROR)
 		return err
 	}
 
@@ -85,15 +81,13 @@ func (c *Client) Set(ctx context.Context, s *session.Session) error {
 }
 
 // GetByID - gets a session from redis using its ID
-func (c *Client) GetByID(ctx context.Context, id string) (*session.Session, error) {
+func (c *Client) GetByID(id string) (*session.Session, error) {
 	if id == "" {
-		log.Event(ctx, ErrEmptySessionID, log.ERROR)
-		return nil, errors.New(ErrEmptySessionID)
+		return nil, ErrEmptySessionID
 	}
 
 	msg, err := c.client.Get(id).Result()
 	if err != nil {
-		log.Event(ctx, msg, log.Error(err), log.ERROR)
 		return nil, err
 	}
 
@@ -101,7 +95,6 @@ func (c *Client) GetByID(ctx context.Context, id string) (*session.Session, erro
 
 	err = json.Unmarshal([]byte(msg), &s)
 	if err != nil {
-		log.Event(ctx, ErrFailedToUnmarshal, log.Error(err), log.ERROR)
 		return nil, err
 	}
 
