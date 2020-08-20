@@ -3,6 +3,7 @@ package dpredis
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	. "github.com/ONSdigital/dp-redis/interfaces"
@@ -74,7 +75,7 @@ func (c *Client) Set(s *session.Session) error {
 
 	err = c.client.Set(s.ID, sJSON, c.ttl).Err()
 	if err != nil {
-		return err
+		return fmt.Errorf("redis client.Set returned an unexpected error: %w", err)
 	}
 
 	return nil

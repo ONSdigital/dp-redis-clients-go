@@ -131,7 +131,7 @@ func TestClient_Set(t *testing.T) {
 			Convey("Then the session will not be stored in the cache and an error is returned", func() {
 				So(mockRedisClient.SetCalls(), ShouldHaveLength, 1)
 				So(err, ShouldNotBeEmpty)
-				So(err.Error(), ShouldEqual, "failed to store session")
+				So(err.Error(), ShouldEqual, "redis client.Set returned an unexpected error: failed to store session")
 			})
 		})
 	})
