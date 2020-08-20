@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ONSdigital/dp-redis/interfaces/mock"
 	"github.com/ONSdigital/dp-sessions-api/session"
 	"github.com/go-redis/redis"
 	. "github.com/smartystreets/goconvey/convey"
@@ -106,7 +105,7 @@ func TestClient_Set(t *testing.T) {
 				LastAccessed: time.Now(),
 			}
 
-			err := client.Set(s)
+			err := client.SetSession(s)
 
 			Convey("Then the session is stored in the cache and no error is returned", func() {
 				So(err, ShouldBeNil)
@@ -126,7 +125,7 @@ func TestClient_Set(t *testing.T) {
 				LastAccessed: time.Now(),
 			}
 
-			err := client.Set(s)
+			err := client.SetSession(s)
 
 			Convey("Then the session will not be stored in the cache and an error is returned", func() {
 				So(mockRedisClient.SetCalls(), ShouldHaveLength, 1)
@@ -141,7 +140,7 @@ func TestClient_Set(t *testing.T) {
 
 		Convey("When there is an invalid session", func() {
 			var s *session.Session = nil
-			err := client.Set(s)
+			err := client.SetSession(s)
 
 			Convey("Then the session will not be stored in the cache and an error is returned", func() {
 				So(mockRedisClient.SetCalls(), ShouldHaveLength, 0)
@@ -199,8 +198,8 @@ func TestClient_GetByID(t *testing.T) {
 	})
 }
 
-func setUpMocks(statusCmd redis.StatusCmd, stringCmd redis.StringCmd) (*mock.RedisClienterMock, *Client) {
-	mockRedisClient := &mock.RedisClienterMock{
+func setUpMocks(statusCmd redis.StatusCmd, stringCmd redis.StringCmd) (*RedisClienterMock, *Client) {
+	mockRedisClient := &RedisClienterMock{
 		PingFunc: nil,
 		SetFunc: func(key string, value interface{}, ttl time.Duration) *redis.StatusCmd {
 			return &statusCmd
@@ -209,9 +208,7 @@ func setUpMocks(statusCmd redis.StatusCmd, stringCmd redis.StringCmd) (*mock.Red
 			return &stringCmd
 		}}
 	return mockRedisClient, &Client{
-		client: RedisClient{
-			client: mockRedisClient,
-		},
+		client: mockRedisClient,
 		ttl: testTTL,
 	}
 }

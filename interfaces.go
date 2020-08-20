@@ -1,6 +1,6 @@
-package interfaces
+package dpredis
 
-//go:generate moq -out mock/mock_redisclienter.go -pkg mock . RedisClienter
+//go:generate moq -out mock/mock_redisclienter.go . RedisClienter
 
 import (
 	"time"

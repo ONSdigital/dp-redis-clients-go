@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/ONSdigital/dp-redis/interfaces"
 	"github.com/ONSdigital/dp-sessions-api/session"
 	"github.com/go-redis/redis"
 )
@@ -20,14 +19,9 @@ var (
 )
 
 // RedisClient - structure for the redis client
-type RedisClient struct {
-	client RedisClienter
-}
-
-// Client - structure for the cache client
 type Client struct {
-	client RedisClient
-	ttl    time.Duration
+	client RedisClienter
+	ttl time.Duration
 }
 
 // Config - config options for the redis client
@@ -53,17 +47,17 @@ func NewClient(c Config) (*Client, error) {
 	}
 
 	return &Client{
-		client: RedisClient{client: redis.NewClient(&redis.Options{
+		client: redis.NewClient(&redis.Options{
 			Addr:     c.Addr,
 			Password: c.Password,
 			DB:       c.Database,
-		})},
+		}),
 		ttl: c.TTL,
 	}, nil
 }
 
 // Set - add session to redis
-func (c *Client) Set(s *session.Session) error {
+func (c *Client) SetSession(s *session.Session) error {
 	if s == nil {
 		return ErrEmptySession
 	}
@@ -103,16 +97,16 @@ func (c *Client) GetByID(id string) (*session.Session, error) {
 }
 
 // Set - redis implementation of Set
-func (rc *RedisClient) Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd {
-	return rc.client.Set(key, value, expiration)
+func (c *Client) Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd {
+	return c.client.Set(key, value, expiration)
 }
 
 // Get - redis implementation of Get
-func (rc *RedisClient) Get(key string) *redis.StringCmd {
-	return rc.client.Get(key)
+func (c *Client) Get(key string) *redis.StringCmd {
+	return c.client.Get(key)
 }
 
 // Ping - redis implementation of Ping
-func (rc *RedisClient) Ping() *redis.StatusCmd {
-	return rc.client.Ping()
+func (c *Client) Ping() *redis.StatusCmd {
+	return c.client.Ping()
 }
