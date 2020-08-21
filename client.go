@@ -18,7 +18,7 @@ var (
 	ErrInvalidTTL     = errors.New("ttl should not be zero")
 )
 
-// RedisClient - structure for the redis client
+// Client - structure for the redis client
 type Client struct {
 	client RedisClienter
 	ttl time.Duration
