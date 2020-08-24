@@ -1,31 +1,27 @@
 package dpredis
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
-	. "github.com/ONSdigital/dp-redis/interfaces"
 	"github.com/ONSdigital/dp-sessions-api/session"
 	"github.com/go-redis/redis"
 )
 
 var (
-	ErrEmptySession   = errors.New("session required but was empty")
-	ErrEmptyAddress   = errors.New("redis host address required but was empty")
-	ErrEmptyPassword  = errors.New("redis password required but was empty")
-	ErrInvalidTTL     = errors.New("redis client ttl cannot be 0")
+	ErrEmptySessionID = errors.New("session id required but was empty")
+	ErrEmptySession   = errors.New("session is empty")
+	ErrEmptyAddress   = errors.New("address is empty")
+	ErrEmptyPassword  = errors.New("password is empty")
+	ErrInvalidTTL     = errors.New("ttl should not be zero")
 )
 
-// RedisClient - structure for the redis client
-type RedisClient struct {
-	client RedisClienter
-}
-
-// Client - structure for the cache client
+// Client - structure for the redis client
 type Client struct {
-	client RedisClient
-	ttl    time.Duration
+	client RedisClienter
+	ttl time.Duration
 }
 
 // Config - config options for the redis client
@@ -51,27 +47,27 @@ func NewClient(c Config) (*Client, error) {
 	}
 
 	return &Client{
-		client:  RedisClient{client:redis.NewClient(&redis.Options{
-			Addr: c.Addr,
+		client: redis.NewClient(&redis.Options{
+			Addr:     c.Addr,
 			Password: c.Password,
-			DB: c.Database,
-		})},
-		ttl:     c.TTL,
+			DB:       c.Database,
+		}),
+		ttl: c.TTL,
 	}, nil
 }
 
 // Set - add session to redis
-func (c *Client) Set(s *session.Session) error {
+func (c *Client) SetSession(s *session.Session) error {
 	if s == nil {
 		return ErrEmptySession
 	}
 
-	json, err := s.MarshalJSON()
+	sJSON, err := s.MarshalJSON()
 	if err != nil {
 		return err
 	}
 
-	err = c.client.Set(s.ID, string(json), c.ttl).Err()
+	err = c.client.Set(s.ID, sJSON, c.ttl).Err()
 	if err != nil {
 		return fmt.Errorf("redis client.Set returned an unexpected error: %w", err)
 	}
@@ -79,12 +75,38 @@ func (c *Client) Set(s *session.Session) error {
 	return nil
 }
 
+// GetByID - gets a session from redis using its ID
+func (c *Client) GetByID(id string) (*session.Session, error) {
+	if id == "" {
+		return nil, ErrEmptySessionID
+	}
+
+	msg, err := c.client.Get(id).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	var s *session.Session
+
+	err = json.Unmarshal([]byte(msg), &s)
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
+
 // Set - redis implementation of Set
-func (rc *RedisClient) Set(key string, value string, expiration time.Duration) *redis.StatusCmd {
-	return rc.client.Set(key, value, expiration)
+func (c *Client) Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd {
+	return c.client.Set(key, value, expiration)
+}
+
+// Get - redis implementation of Get
+func (c *Client) Get(key string) *redis.StringCmd {
+	return c.client.Get(key)
 }
 
 // Ping - redis implementation of Ping
-func (rc *RedisClient) Ping() *redis.StatusCmd {
-	return rc.client.Ping()
+func (c *Client) Ping() *redis.StatusCmd {
+	return c.client.Ping()
 }
