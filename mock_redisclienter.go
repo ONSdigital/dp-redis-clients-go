@@ -10,9 +10,10 @@ import (
 )
 
 var (
-	lockRedisClienterMockGet  sync.RWMutex
-	lockRedisClienterMockPing sync.RWMutex
-	lockRedisClienterMockSet  sync.RWMutex
+	lockRedisClienterMockFlushAll sync.RWMutex
+	lockRedisClienterMockGet      sync.RWMutex
+	lockRedisClienterMockPing     sync.RWMutex
+	lockRedisClienterMockSet      sync.RWMutex
 )
 
 // Ensure, that RedisClienterMock does implement RedisClienter.
@@ -25,6 +26,9 @@ var _ RedisClienter = &RedisClienterMock{}
 //
 //         // make and configure a mocked RedisClienter
 //         mockedRedisClienter := &RedisClienterMock{
+//             FlushAllFunc: func() *redis.StatusCmd {
+// 	               panic("mock out the FlushAll method")
+//             },
 //             GetFunc: func(key string) *redis.StringCmd {
 // 	               panic("mock out the Get method")
 //             },
@@ -41,6 +45,9 @@ var _ RedisClienter = &RedisClienterMock{}
 //
 //     }
 type RedisClienterMock struct {
+	// FlushAllFunc mocks the FlushAll method.
+	FlushAllFunc func() *redis.StatusCmd
+
 	// GetFunc mocks the Get method.
 	GetFunc func(key string) *redis.StringCmd
 
@@ -52,6 +59,9 @@ type RedisClienterMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// FlushAll holds details about calls to the FlushAll method.
+		FlushAll []struct {
+		}
 		// Get holds details about calls to the Get method.
 		Get []struct {
 			// Key is the key argument value.
@@ -70,6 +80,32 @@ type RedisClienterMock struct {
 			Expiration time.Duration
 		}
 	}
+}
+
+// FlushAll calls FlushAllFunc.
+func (mock *RedisClienterMock) FlushAll() *redis.StatusCmd {
+	if mock.FlushAllFunc == nil {
+		panic("RedisClienterMock.FlushAllFunc: method is nil but RedisClienter.FlushAll was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockRedisClienterMockFlushAll.Lock()
+	mock.calls.FlushAll = append(mock.calls.FlushAll, callInfo)
+	lockRedisClienterMockFlushAll.Unlock()
+	return mock.FlushAllFunc()
+}
+
+// FlushAllCalls gets all the calls that were made to FlushAll.
+// Check the length with:
+//     len(mockedRedisClienter.FlushAllCalls())
+func (mock *RedisClienterMock) FlushAllCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockRedisClienterMockFlushAll.RLock()
+	calls = mock.calls.FlushAll
+	lockRedisClienterMockFlushAll.RUnlock()
+	return calls
 }
 
 // Get calls GetFunc.

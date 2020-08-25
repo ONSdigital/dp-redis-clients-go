@@ -96,6 +96,15 @@ func (c *Client) GetByID(id string) (*session.Session, error) {
 	return s, nil
 }
 
+func (c *Client) DeleteAll() error {
+	err := c.client.FlushAll().Err()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Set - redis implementation of Set
 func (c *Client) Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd {
 	return c.client.Set(key, value, expiration)
@@ -104,6 +113,11 @@ func (c *Client) Set(key string, value interface{}, expiration time.Duration) *r
 // Get - redis implementation of Get
 func (c *Client) Get(key string) *redis.StringCmd {
 	return c.client.Get(key)
+}
+
+// FlushAll - redis implementation of FlushAll
+func (c *Client) FlushAll() *redis.StatusCmd {
+	return c.client.FlushAll()
 }
 
 // Ping - redis implementation of Ping

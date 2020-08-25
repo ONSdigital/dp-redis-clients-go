@@ -1,6 +1,6 @@
 package dpredis
 
-//go:generate moq -out mock/mock_redisclienter.go . RedisClienter
+//go:generate moq -out mock_redisclienter.go . RedisClienter
 
 import (
 	"time"
@@ -12,5 +12,6 @@ import (
 type RedisClienter interface {
 	Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd
 	Get(key string) *redis.StringCmd
+	FlushAll() * redis.StatusCmd
 	Ping() *redis.StatusCmd
 }

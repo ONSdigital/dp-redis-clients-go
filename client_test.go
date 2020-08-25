@@ -94,8 +94,11 @@ func TestNewClient(t *testing.T) {
 
 func TestClient_Set(t *testing.T) {
 	Convey("Given a valid sessions and redis client.Set returns no error", t, func() {
-		mockRedisClient, client := setUpMocks(*redis.NewStatusResult("success", nil), *redis.NewStringCmd())
-
+		mockRedisClient, client := setUpMocks(
+			*redis.NewStatusResult("success", nil),
+			*redis.NewStringCmd(),
+			*redis.NewStatusCmd(),
+		)
 
 		Convey("When there is a valid session", func() {
 			s := &session.Session{
@@ -115,7 +118,11 @@ func TestClient_Set(t *testing.T) {
 	})
 
 	Convey("Given a valid session and redis client.Set returns an error", t, func() {
-		mockRedisClient, client := setUpMocks(*redis.NewStatusResult("fail", errors.New("failed to store session")), *redis.NewStringCmd())
+		mockRedisClient, client := setUpMocks(
+			*redis.NewStatusResult("fail", errors.New("failed to store session")),
+			*redis.NewStringCmd(),
+			*redis.NewStatusCmd(),
+		)
 
 		Convey("When there is a valid session but redis client.Set errors ", func() {
 			s := &session.Session{
@@ -136,7 +143,11 @@ func TestClient_Set(t *testing.T) {
 	})
 
 	Convey("Given an invalid session and redis client.Set returns an error", t, func() {
-		mockRedisClient, client := setUpMocks(*redis.NewStatusCmd(), *redis.NewStringCmd())
+		mockRedisClient, client := setUpMocks(
+			*redis.NewStatusCmd(),
+			*redis.NewStringCmd(),
+			*redis.NewStatusCmd(),
+		)
 
 		Convey("When there is an invalid session", func() {
 			var s *session.Session = nil
@@ -153,7 +164,11 @@ func TestClient_Set(t *testing.T) {
 
 func TestClient_GetByID(t *testing.T) {
 	Convey("Given a session ID client.GetByID returns a session", t, func() {
-		mockRedisClient, client := setUpMocks(*redis.NewStatusCmd(), *redis.NewStringResult(string(resp), nil))
+		mockRedisClient, client := setUpMocks(
+			*redis.NewStatusCmd(),
+			*redis.NewStringResult(string(resp), nil),
+			*redis.NewStatusCmd(),
+		)
 
 		Convey("When client uses the ID to get the session", func() {
 			s, err := client.GetByID("1234")
@@ -168,7 +183,11 @@ func TestClient_GetByID(t *testing.T) {
 	})
 
 	Convey("Given a blank session ID client.GetByID returns an error", t, func() {
-		mockRedisClient, client := setUpMocks(*redis.NewStatusCmd(), *redis.NewStringCmd())
+		mockRedisClient, client := setUpMocks(
+			*redis.NewStatusCmd(),
+			*redis.NewStringCmd(),
+			*redis.NewStatusCmd(),
+		)
 
 		Convey("When client.GetByID is called has an empty ID", func() {
 			s, err := client.GetByID("")
@@ -183,7 +202,11 @@ func TestClient_GetByID(t *testing.T) {
 	})
 
 	Convey("Given a session ID client.GetByID returns an error", t, func() {
-		mockRedisClient, client := setUpMocks(*redis.NewStatusCmd(), *redis.NewStringResult("", errors.New("unexpected end of JSON input")))
+		mockRedisClient, client := setUpMocks(
+			*redis.NewStatusCmd(),
+			*redis.NewStringResult("", errors.New("unexpected end of JSON input")),
+			*redis.NewStatusCmd(),
+		)
 
 		Convey("When client.GetByID is called with a valid session ID", func() {
 			s, err := client.GetByID("1234")
@@ -198,17 +221,57 @@ func TestClient_GetByID(t *testing.T) {
 	})
 }
 
-func setUpMocks(statusCmd redis.StatusCmd, stringCmd redis.StringCmd) (*RedisClienterMock, *Client) {
+func TestClient_DeleteAll(t *testing.T) {
+	Convey("Given DeleteAll removes all sessions from cache", t, func() {
+		mockRedisClient, client := setUpMocks(
+			*redis.NewStatusCmd(),
+			*redis.NewStringCmd(),
+			*redis.NewStatusCmd())
+
+		Convey("When DeleteAll is called", func() {
+			err := client.DeleteAll()
+
+			Convey("Then all sessions are removed from cache and no error is returned", func() {
+				So(err, ShouldBeNil)
+				So(mockRedisClient.FlushAllCalls(), ShouldHaveLength, 1)
+			})
+		})
+	})
+
+	Convey("Given DeleteAll returns an error", t, func() {
+		mockRedisClient, client := setUpMocks(
+			*redis.NewStatusCmd(),
+			*redis.NewStringCmd(),
+			*redis.NewStatusResult("fail", errors.New("some redis error")),
+		)
+
+		Convey("When DeleteAll is called", func() {
+			err := client.DeleteAll()
+
+			Convey("Then no sessions are removed and a redis error is returned", func() {
+				So(err, ShouldNotBeEmpty)
+				So(err.Error(), ShouldEqual, "some redis error")
+				So(mockRedisClient.FlushAllCalls(), ShouldHaveLength, 1)
+			})
+		})
+
+	})
+}
+
+func setUpMocks(setStatusCmd redis.StatusCmd, getStringCmd redis.StringCmd, flushAllStatusCmd redis.StatusCmd) (*RedisClienterMock, *Client) {
 	mockRedisClient := &RedisClienterMock{
 		PingFunc: nil,
 		SetFunc: func(key string, value interface{}, ttl time.Duration) *redis.StatusCmd {
-			return &statusCmd
+			return &setStatusCmd
 		},
 		GetFunc: func(key string) *redis.StringCmd {
-			return &stringCmd
+			return &getStringCmd
+		},
+		FlushAllFunc: func() *redis.StatusCmd {
+			return &flushAllStatusCmd
 		}}
 	return mockRedisClient, &Client{
 		client: mockRedisClient,
-		ttl: testTTL,
+		ttl:    testTTL,
 	}
 }
