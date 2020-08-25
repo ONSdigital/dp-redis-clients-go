@@ -93,6 +93,13 @@ func (c *Client) GetByID(id string) (*session.Session, error) {
 		return nil, err
 	}
 
+	// Refresh TTL on access and update LastAccessed in session
+	s.LastAccessed = time.Now()
+	err = c.client.Expire(s.ID, c.ttl).Err()
+	if err != nil {
+		return nil, err
+	}
+
 	return s, nil
 }
 
@@ -118,6 +125,11 @@ func (c *Client) Get(key string) *redis.StringCmd {
 // FlushAll - redis implementation of FlushAll
 func (c *Client) FlushAll() *redis.StatusCmd {
 	return c.client.FlushAll()
+}
+
+// Expire - redis implementation of Expire
+func (c *Client) Expire(key string, expiration time.Duration) *redis.BoolCmd {
+	return c.client.Expire(key, expiration)
 }
 
 // Ping - redis implementation of Ping
