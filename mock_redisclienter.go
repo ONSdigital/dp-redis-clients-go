@@ -10,6 +10,7 @@ import (
 )
 
 var (
+	lockRedisClienterMockExpire   sync.RWMutex
 	lockRedisClienterMockFlushAll sync.RWMutex
 	lockRedisClienterMockGet      sync.RWMutex
 	lockRedisClienterMockPing     sync.RWMutex
@@ -26,6 +27,9 @@ var _ RedisClienter = &RedisClienterMock{}
 //
 //         // make and configure a mocked RedisClienter
 //         mockedRedisClienter := &RedisClienterMock{
+//             ExpireFunc: func(key string, expiration time.Duration) *redis.BoolCmd {
+// 	               panic("mock out the Expire method")
+//             },
 //             FlushAllFunc: func() *redis.StatusCmd {
 // 	               panic("mock out the FlushAll method")
 //             },
@@ -45,6 +49,9 @@ var _ RedisClienter = &RedisClienterMock{}
 //
 //     }
 type RedisClienterMock struct {
+	// ExpireFunc mocks the Expire method.
+	ExpireFunc func(key string, expiration time.Duration) *redis.BoolCmd
+
 	// FlushAllFunc mocks the FlushAll method.
 	FlushAllFunc func() *redis.StatusCmd
 
@@ -59,6 +66,13 @@ type RedisClienterMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// Expire holds details about calls to the Expire method.
+		Expire []struct {
+			// Key is the key argument value.
+			Key string
+			// Expiration is the expiration argument value.
+			Expiration time.Duration
+		}
 		// FlushAll holds details about calls to the FlushAll method.
 		FlushAll []struct {
 		}
@@ -80,6 +94,41 @@ type RedisClienterMock struct {
 			Expiration time.Duration
 		}
 	}
+}
+
+// Expire calls ExpireFunc.
+func (mock *RedisClienterMock) Expire(key string, expiration time.Duration) *redis.BoolCmd {
+	if mock.ExpireFunc == nil {
+		panic("RedisClienterMock.ExpireFunc: method is nil but RedisClienter.Expire was just called")
+	}
+	callInfo := struct {
+		Key        string
+		Expiration time.Duration
+	}{
+		Key:        key,
+		Expiration: expiration,
+	}
+	lockRedisClienterMockExpire.Lock()
+	mock.calls.Expire = append(mock.calls.Expire, callInfo)
+	lockRedisClienterMockExpire.Unlock()
+	return mock.ExpireFunc(key, expiration)
+}
+
+// ExpireCalls gets all the calls that were made to Expire.
+// Check the length with:
+//     len(mockedRedisClienter.ExpireCalls())
+func (mock *RedisClienterMock) ExpireCalls() []struct {
+	Key        string
+	Expiration time.Duration
+} {
+	var calls []struct {
+		Key        string
+		Expiration time.Duration
+	}
+	lockRedisClienterMockExpire.RLock()
+	calls = mock.calls.Expire
+	lockRedisClienterMockExpire.RUnlock()
+	return calls
 }
 
 // FlushAll calls FlushAllFunc.
