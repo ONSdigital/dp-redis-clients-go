@@ -95,7 +95,7 @@ func (c *Client) GetByID(id string) (*session.Session, error) {
 
 	// Refresh TTL on access and update LastAccessed in session
 	s.LastAccessed = time.Now()
-	err = c.client.Expire(s.ID, c.ttl).Err()
+	err = c.Expire(s.ID, c.ttl)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (c *Client) Ping() error {
 	return c.client.Ping().Err()
 }
 
-// Expire - redis implementation of Expire
-func (c *Client) Expire(key string, expiration time.Duration) *redis.BoolCmd {
-	return c.client.Expire(key, expiration)
+// Expire - sets the expiration of key
+func (c *Client) Expire(key string, expiration time.Duration) error {
+	return c.client.Expire(key, expiration).Err()
 }
