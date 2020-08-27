@@ -7,7 +7,7 @@ import (
 const HealthyMessage = "redis is OK"
 
 func (c *Client) Checker(state *health.CheckState) error {
-	_, err := c.client.Ping().Result()
+	err := c.Ping()
 	if err != nil {
 		// Generic error
 		return state.Update(health.StatusCritical, err.Error(), 0)
