@@ -98,20 +98,10 @@ func (c *Client) GetByID(id string) (*session.Session, error) {
 
 // DeleteAll - removes all items from redis
 func (c *Client) DeleteAll() error {
-	err := c.client.FlushAll().Err()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return c.client.FlushAll().Err()
 }
 
 // Ping - checks the connection to redis
 func (c *Client) Ping() error {
-	err := c.client.Ping().Err()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return c.client.Ping().Err()
 }
