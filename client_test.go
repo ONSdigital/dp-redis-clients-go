@@ -187,6 +187,7 @@ func TestClient_GetByID(t *testing.T) {
 				So(s, ShouldNotBeEmpty)
 				So(s.ID, ShouldEqual, "1234")
 				So(s.LastAccessed.String(), ShouldNotEqual, respLastAccessed)
+				So(mockRedisClient.ExpireCalls()[0].Expiration, ShouldEqual, testTTL)
 			})
 		})
 	})
