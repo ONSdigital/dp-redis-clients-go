@@ -56,7 +56,7 @@ func NewClient(c Config) (*Client, error) {
 	}, nil
 }
 
-// Set - add session to redis
+// SetSession - add session to redis
 func (c *Client) SetSession(s *session.Session) error {
 	if s == nil {
 		return ErrEmptySession
