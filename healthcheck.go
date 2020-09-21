@@ -1,12 +1,13 @@
 package dpredis
 
 import (
+	"context"
 	health "github.com/ONSdigital/dp-healthcheck/healthcheck"
 )
 
 const HealthyMessage = "redis is OK"
 
-func (c *Client) Checker(state *health.CheckState) error {
+func (c *Client) Checker(ctx context.Context, state *health.CheckState) error {
 	err := c.Ping()
 	if err != nil {
 		// Generic error
