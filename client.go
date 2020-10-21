@@ -1,6 +1,8 @@
 package dpredis
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -21,7 +23,7 @@ var (
 // Client - structure for the redis client
 type Client struct {
 	client RedisClienter
-	ttl time.Duration
+	ttl    time.Duration
 }
 
 // Config - config options for the redis client
@@ -46,11 +48,16 @@ func NewClient(c Config) (*Client, error) {
 		return nil, ErrInvalidTTL
 	}
 
+	caCertPool := x509.NewCertPool()
+
 	return &Client{
 		client: redis.NewClient(&redis.Options{
 			Addr:     c.Addr,
 			Password: c.Password,
 			DB:       c.Database,
+			TLSConfig: &tls.Config{
+				RootCAs: caCertPool,
+			},
 		}),
 		ttl: c.TTL,
 	}, nil
