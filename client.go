@@ -1,6 +1,7 @@
 package dpredis
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -51,6 +52,9 @@ func NewClient(c Config) (*Client, error) {
 			Addr:     c.Addr,
 			Password: c.Password,
 			DB:       c.Database,
+			TLSConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
 		}),
 		ttl: c.TTL,
 	}, nil
