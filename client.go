@@ -71,7 +71,14 @@ func (c *Client) SetSession(s *session.Session) error {
 		return err
 	}
 
+	// Add session using ID as key
 	err = c.client.Set(s.ID, sJSON, c.ttl).Err()
+	if err != nil {
+		return fmt.Errorf("redis client.Set returned an unexpected error: %w", err)
+	}
+
+	// Add session using email as key
+	err = c.client.Set(s.Email, sJSON, c.ttl).Err()
 	if err != nil {
 		return fmt.Errorf("redis client.Set returned an unexpected error: %w", err)
 	}

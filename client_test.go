@@ -116,7 +116,7 @@ func TestClient_Set(t *testing.T) {
 
 			Convey("Then the session is stored in the cache and no error is returned", func() {
 				So(err, ShouldBeNil)
-				So(mockRedisClient.SetCalls(), ShouldHaveLength, 1)
+				So(mockRedisClient.SetCalls(), ShouldHaveLength, 2)
 			})
 		})
 	})
