@@ -12,17 +12,18 @@ import (
 )
 
 var (
-	ErrEmptySessionID = errors.New("session id required but was empty")
-	ErrEmptySession   = errors.New("session is empty")
-	ErrEmptyAddress   = errors.New("address is empty")
-	ErrEmptyPassword  = errors.New("password is empty")
-	ErrInvalidTTL     = errors.New("ttl should not be zero")
+	ErrEmptySessionID    = errors.New("session id required but was empty")
+	ErrEmptySessionEmail = errors.New("session email required but was empty")
+	ErrEmptySession      = errors.New("session is empty")
+	ErrEmptyAddress      = errors.New("address is empty")
+	ErrEmptyPassword     = errors.New("password is empty")
+	ErrInvalidTTL        = errors.New("ttl should not be zero")
 )
 
 // Client - structure for the redis client
 type Client struct {
 	client RedisClienter
-	ttl time.Duration
+	ttl    time.Duration
 }
 
 // Config - config options for the redis client
@@ -71,7 +72,14 @@ func (c *Client) SetSession(s *session.Session) error {
 		return err
 	}
 
+	// Add session using ID as key
 	err = c.client.Set(s.ID, sJSON, c.ttl).Err()
+	if err != nil {
+		return fmt.Errorf("redis client.Set returned an unexpected error: %w", err)
+	}
+
+	// Add session using email as key
+	err = c.client.Set(s.Email, sJSON, c.ttl).Err()
 	if err != nil {
 		return fmt.Errorf("redis client.Set returned an unexpected error: %w", err)
 	}
@@ -99,6 +107,44 @@ func (c *Client) GetByID(id string) (*session.Session, error) {
 
 	// Refresh TTL on access and update LastAccessed in session
 	s.LastAccessed = time.Now()
+	err = c.Expire(s.ID, c.ttl)
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.Expire(s.Email, c.ttl)
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
+
+// GetByEmail - gets a session from redis using its ID
+func (c *Client) GetByEmail(email string) (*session.Session, error) {
+	if email == "" {
+		return nil, ErrEmptySessionEmail
+	}
+
+	msg, err := c.client.Get(email).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	var s *session.Session
+
+	err = json.Unmarshal([]byte(msg), &s)
+	if err != nil {
+		return nil, err
+	}
+
+	// Refresh TTL on access and update LastAccessed in session
+	s.LastAccessed = time.Now()
+	err = c.Expire(s.Email, c.ttl)
+	if err != nil {
+		return nil, err
+	}
+
 	err = c.Expire(s.ID, c.ttl)
 	if err != nil {
 		return nil, err
