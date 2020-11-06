@@ -32,6 +32,7 @@ type Config struct {
 	Password string
 	Database int
 	TTL      time.Duration
+	TLS      *tls.Config
 }
 
 // NewClient - returns new redis client with provided config options
@@ -50,12 +51,10 @@ func NewClient(c Config) (*Client, error) {
 
 	return &Client{
 		client: redis.NewClient(&redis.Options{
-			Addr:     c.Addr,
-			Password: c.Password,
-			DB:       c.Database,
-			TLSConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
+			Addr:      c.Addr,
+			Password:  c.Password,
+			DB:        c.Database,
+			TLSConfig: c.TLS,
 		}),
 		ttl: c.TTL,
 	}, nil
