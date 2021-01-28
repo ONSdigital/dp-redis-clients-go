@@ -1,4 +1,4 @@
-package dpredis
+package sessions
 
 import (
 	"errors"

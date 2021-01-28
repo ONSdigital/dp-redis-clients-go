@@ -1,4 +1,4 @@
-package dpredis
+package sessions
 
 //go:generate moq -out mock_redisclienter.go . RedisClienter
 
