@@ -1,4 +1,4 @@
-package dpredis
+package sessions
 
 //go:generate moq -out mock_redisclienter.go . RedisClienter
 
@@ -13,6 +13,6 @@ type RedisClienter interface {
 	Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd
 	Get(key string) *redis.StringCmd
 	Expire(key string, expiration time.Duration) *redis.BoolCmd
-	FlushAll() * redis.StatusCmd
+	FlushAll() *redis.StatusCmd
 	Ping() *redis.StatusCmd
 }
