@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ONSdigital/dp-sessions-api/session"
 	"github.com/go-redis/redis"
 )
 
@@ -61,7 +60,7 @@ func NewClient(c Config) (*Client, error) {
 }
 
 // SetSession - add session to redis
-func (c *Client) SetSession(s *session.Session) error {
+func (c *Client) SetSession(s *Session) error {
 	if s == nil {
 		return ErrEmptySession
 	}
@@ -87,7 +86,7 @@ func (c *Client) SetSession(s *session.Session) error {
 }
 
 // GetByID - gets a session from redis using its ID
-func (c *Client) GetByID(id string) (*session.Session, error) {
+func (c *Client) GetByID(id string) (*Session, error) {
 	if id == "" {
 		return nil, ErrEmptySessionID
 	}
@@ -97,7 +96,7 @@ func (c *Client) GetByID(id string) (*session.Session, error) {
 		return nil, err
 	}
 
-	var s *session.Session
+	var s *Session
 
 	err = json.Unmarshal([]byte(msg), &s)
 	if err != nil {
@@ -120,7 +119,7 @@ func (c *Client) GetByID(id string) (*session.Session, error) {
 }
 
 // GetByEmail - gets a session from redis using its ID
-func (c *Client) GetByEmail(email string) (*session.Session, error) {
+func (c *Client) GetByEmail(email string) (*Session, error) {
 	if email == "" {
 		return nil, ErrEmptySessionEmail
 	}
@@ -130,7 +129,7 @@ func (c *Client) GetByEmail(email string) (*session.Session, error) {
 		return nil, err
 	}
 
-	var s *session.Session
+	var s *Session
 
 	err = json.Unmarshal([]byte(msg), &s)
 	if err != nil {
