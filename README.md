@@ -1,6 +1,8 @@
 dp-redis
 ================
 
+`dp-redis` is a Go client for adding/retrieving user session objects to/from a Redis Cache instance. 
+
 ### Getting started
 - Add dp-redis to your project using `go get github.com/ONSdigital/dp-redis`
 
@@ -8,41 +10,71 @@ dp-redis
 - No further dependencies other than those defined in go.mod
 
 ### Usage
-Sample use of `GetByID()`:
 
-*s represents a Session in all examples*
+```go
+import (
+    "crypto/tls"
 
+    dpRedis "github.com/ONSdigital/dp-redis"
+)
+
+func main() {
+    cfg := dpRedis.Config{
+        Addr:     "redis_address",
+        Password: "redis_password",
+        Database: "database_name",
+        TTL:      0, // Time to live config
+        TLS: &tls.Config{
+            // configure as required
+        },
+    }
+
+    cli, err := dpredis.NewClient(cfg)
+    if err != nil {
+        // handle err
+    }
+    ...
+}   
 ```
-s, err := cache.GetByID(ID)
+
+Get session by ID:
+
+```go
+s, err := cache.GetByID("the_session_id")
 
 if err != nil {
-    panic(err)
-    return
+    // handle error
 }
 ```
+Get session by email:
+```go
+s, err := cache.GetByEmail("user_email")
 
-Sample use of `SetSession()`:
-
+if err != nil {
+    // handle error
+}
 ```
-s := &session.Session{
+Set session:
+```go
+startTime := time.Now()
+
+s := &Session{
         ID:           "1234",
         Email:        "user@email.com",
-        Start:        time.Time{},
-        LastAccessed: time.Time{}, 
+        Start:        startTime,
+        LastAccessed: startTime, 
     }
 
 if err := cache.Set(s); err != nil {
-    panic(err)
-	return
+    // handle error
 }
 ```
-
-Sample use of `DeleteAll()`:
+Delete all sessions:
 
 ```
 if err := cache.DeleteAll(); err != nil {
-    panic(err)
-    return
+    // handle error
+    ...
 }
 ```
 
