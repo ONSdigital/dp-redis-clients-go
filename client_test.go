@@ -194,7 +194,7 @@ func TestClient_GetByID(t *testing.T) {
 			s, err := client.GetByID("1234")
 			So(err, ShouldBeNil)
 
-			Convey("The redis client.Get is called with the expected parameters", func() {
+			Convey("Then redis client.Get is called with the expected parameters", func() {
 				So(mockRedisClient.GetCalls(), ShouldHaveLength, 1)
 				So(mockRedisClient.GetCalls()[0].Key, ShouldEqual, "1234")
 
@@ -227,7 +227,7 @@ func TestClient_GetByID(t *testing.T) {
 		Convey("When client uses the ID to get the session", func() {
 			s, err := client.GetByID("1234")
 
-			Convey("The redis client.Get is called with the expected parameters", func() {
+			Convey("Then redis client.Get is called with the expected parameters", func() {
 				So(mockRedisClient.GetCalls(), ShouldHaveLength, 1)
 				So(mockRedisClient.GetCalls()[0].Key, ShouldEqual, "1234")
 				So(mockRedisClient.ExpireCalls(), ShouldHaveLength, 1)

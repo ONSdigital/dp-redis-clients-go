@@ -24,7 +24,7 @@ type jsonModel struct {
 	LastAccessed string `json:"last_accessed"`
 }
 
-// MarshalJSON is custom JSON marshaller the Session object ensuring the date fields are marshalled into the correct format
+// MarshalJSON is custom JSON marshaller for the Session object ensuring the date fields are marshalled into the correct format
 func (s *Session) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&jsonModel{
 		ID:           s.ID,
